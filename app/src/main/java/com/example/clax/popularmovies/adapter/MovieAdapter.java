@@ -25,18 +25,27 @@ public class MovieAdapter extends ArrayAdapter<Movie>{
     @Override
     public View getView(int position, @Nullable View convertView, @NonNull ViewGroup parent) {
         Movie movie = getItem(position);
+        ViewHolder viewHolder;
 
         if (convertView == null) {
             convertView = LayoutInflater.from(getContext()).inflate(R.layout.list_item_movie, parent, false);
+            viewHolder = new ViewHolder();
+            viewHolder.movieImage = convertView.findViewById(R.id.iv_movie_image);
+            viewHolder.movieImage.setScaleType(ImageView.ScaleType.FIT_XY);
+            viewHolder.movieImage.setPadding(1,1,1,1);
+            convertView.setTag(viewHolder);
+        } else {
+            viewHolder = (ViewHolder) convertView.getTag();
         }
 
-        ImageView movieImage = convertView.findViewById(R.id.iv_movie_image);
-        movieImage.setScaleType(ImageView.ScaleType.FIT_XY);
-        movieImage.setPadding(1,1,1,1);
         if(movie != null) {
-            Picasso.get().load(movie.getImagePath()).into(movieImage);
+            Picasso.get().load(movie.getImagePath()).into(viewHolder.movieImage);
         }
 
         return convertView;
+    }
+
+    static class ViewHolder {
+        ImageView movieImage;
     }
 }

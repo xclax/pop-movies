@@ -1,4 +1,4 @@
-package com.example.clax.popularmovies;
+package com.example.clax.popularmovies.exceptions;
 
 public class ConnectionException extends RuntimeException {
 

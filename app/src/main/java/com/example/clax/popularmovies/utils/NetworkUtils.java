@@ -1,5 +1,8 @@
 package com.example.clax.popularmovies.utils;
 
+import android.content.Context;
+import android.net.ConnectivityManager;
+import android.net.NetworkInfo;
 import android.net.Uri;
 
 import java.io.IOException;
@@ -13,14 +16,16 @@ public class NetworkUtils {
 
     private static final String BASE_URL = "http://api.themoviedb.org/3/movie/";
     private static final String KEY_PARAM = "api_key";
+    private static final String TOP_RATED_PATH = "top_rated";
+    private static final String POPULAR_PATH = "popular";
 
     public static URL buildUrl(String key, boolean changeURL) {
         String appendPath;
 
         if(changeURL) {
-            appendPath = "top_rated";
+            appendPath = TOP_RATED_PATH;
         } else {
-            appendPath = "popular";
+            appendPath = POPULAR_PATH;
         }
 
         Uri builtUri = Uri.parse(BASE_URL).buildUpon()
@@ -56,5 +61,14 @@ public class NetworkUtils {
         } finally {
             urlConnection.disconnect();
         }
+    }
+
+    public static boolean hasNetwork(Context context) {
+        ConnectivityManager connectivityManager = (ConnectivityManager) context.getSystemService(Context.CONNECTIVITY_SERVICE);
+        NetworkInfo networkInfo = connectivityManager.getActiveNetworkInfo();
+        if(networkInfo != null && networkInfo.isConnectedOrConnecting()) {
+            return true;
+        }
+        return false;
     }
 }

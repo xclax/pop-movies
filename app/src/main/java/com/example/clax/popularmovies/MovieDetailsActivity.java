@@ -22,9 +22,10 @@ public class MovieDetailsActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_movie_details);
 
-        if(getIntent() != null) {
-            if(getIntent().hasExtra("movie")) {
-               movie = (Movie) getIntent().getSerializableExtra("movie");
+        Bundle bundle = getIntent().getExtras();
+        if(bundle != null) {
+            if(getIntent().hasExtra(Movie.MOVIE_KEY)) {
+               movie = bundle.getParcelable(Movie.MOVIE_KEY);
             }
         }
 

@@ -1,13 +1,9 @@
 package com.example.clax.popularmovies;
 
 
-import com.example.clax.popularmovies.adapter.MovieAdapter;
-import com.example.clax.popularmovies.models.Movie;
-
 import android.content.Intent;
-import android.os.AsyncTask;
-import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.support.v7.app.AppCompatActivity;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
@@ -16,28 +12,28 @@ import android.widget.AdapterView;
 import android.widget.GridView;
 import android.widget.ProgressBar;
 import android.widget.TextView;
+import android.widget.Toast;
 
-import com.example.clax.popularmovies.utils.MovieJsonUtils;
+import com.example.clax.popularmovies.adapter.MovieAdapter;
+import com.example.clax.popularmovies.models.Movie;
+import com.example.clax.popularmovies.service.AsyncTaskDelegate;
+import com.example.clax.popularmovies.service.MovieServiceTask;
 import com.example.clax.popularmovies.utils.NetworkUtils;
 
-import org.json.JSONException;
-
-import java.io.IOException;
 import java.net.URL;
 import java.util.List;
 
-public class MovieMainActivity extends AppCompatActivity {
+public class MovieMainActivity extends AppCompatActivity implements AsyncTaskDelegate{
 
     private GridView movieGrid;
     private ProgressBar loadingProgressBar;
     private TextView errorTextView;
-    private String API_KEY = "";
+    private static final String API_KEY = BuildConfig.API_KEY;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_movie_main);
-        API_KEY = getResources().getString(R.string.api_key);
         findViews();
 
         movieGrid.setOnItemClickListener(new AdapterView.OnItemClickListener() {
@@ -45,13 +41,23 @@ public class MovieMainActivity extends AppCompatActivity {
             public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
                 Movie movie = (Movie) parent.getItemAtPosition(position);
                 Intent movieDetailsIntent = new Intent(MovieMainActivity.this, MovieDetailsActivity.class);
-                movieDetailsIntent.putExtra("movie", movie);
+                movieDetailsIntent.putExtra(Movie.MOVIE_KEY, movie);
                 startActivity(movieDetailsIntent);
             }
         });
 
         URL movieDatabaseURL = NetworkUtils.buildUrl(API_KEY, false);
-        new GetMoviesTask().execute(movieDatabaseURL);
+
+        checkNetworkConnection(movieDatabaseURL);
+    }
+
+    private void checkNetworkConnection(URL movieDatabaseURL) {
+        if(NetworkUtils.hasNetwork(this)) {
+            showProgressBar();
+            new MovieServiceTask( this).execute(movieDatabaseURL);
+        } else {
+            Toast.makeText(this, getResources().getString(R.string.connection_error), Toast.LENGTH_SHORT).show();
+        }
     }
 
     private void findViews() {
@@ -66,12 +72,12 @@ public class MovieMainActivity extends AppCompatActivity {
 
         if(item.getItemId() == R.id.action_top_rated_movies) {
             movieDatabaseURL = NetworkUtils.buildUrl(API_KEY, true);
-            new GetMoviesTask().execute(movieDatabaseURL);
+            checkNetworkConnection(movieDatabaseURL);
         }
 
         if(item.getItemId() == R.id.action_popular_movies) {
             movieDatabaseURL = NetworkUtils.buildUrl(API_KEY, false);
-            new GetMoviesTask().execute(movieDatabaseURL);
+           checkNetworkConnection(movieDatabaseURL);
         }
         return super.onOptionsItemSelected(item);
     }
@@ -93,46 +99,17 @@ public class MovieMainActivity extends AppCompatActivity {
         errorTextView.setVisibility(View.VISIBLE);
    }
 
-    protected class GetMoviesTask extends AsyncTask<URL, Void, List<Movie>> {
-
-        @Override
-        protected void onPreExecute() {
-          showProgressBar();
-        }
-
-        @Override
-        protected List<Movie> doInBackground(URL... urls) {
-            List<Movie> moviesList;
-            String response = null;
-
-            try {
-                response = NetworkUtils.getResponseFromHttpUrl(urls[0]);
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-
-            try {
-                moviesList = MovieJsonUtils.getMoviesListFromJson(response);
-            } catch (JSONException e) {
-                e.printStackTrace();
-                return null;
-            }catch(ConnectionException e) {
-                e.printStackTrace();
-                return null;
-            }
-            return moviesList;
-        }
-
-        @Override
-        protected void onPostExecute(List<Movie> movies) {
+    @Override
+    public void processFinish(Object output) {
+        if(output != null) {
             loadingProgressBar.setVisibility(View.INVISIBLE);
+            List<Movie> movies = (List<Movie>) output;
+            MovieAdapter movieAdapter = new MovieAdapter(MovieMainActivity.this, movies);
+            movieGrid.setAdapter(movieAdapter);
 
-            if(movies != null) {
-                MovieAdapter movieAdapter = new MovieAdapter(MovieMainActivity.this, movies);
-                movieGrid.setAdapter(movieAdapter);
-            } else {
-                showErrorMessage();
-            }
+        } else {
+            showErrorMessage();
         }
     }
+
 }
